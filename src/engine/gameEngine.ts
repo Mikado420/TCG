@@ -743,7 +743,6 @@ export class GameEngine {
       // Attacks
       for (const unit of active.battlefield) {
         if (unit.isRested) continue;
-        if (unit.hasSummoningSickness && !unit.baseCard.hasHaste) continue;
 
         const stats = this.calculateEffectiveStats(unit, active, opponent);
         if (!stats.canAttack) continue;
@@ -875,7 +874,7 @@ export class GameEngine {
           const card = active.hand.splice(handIdx, 1)[0];
           this.payCost(active, card.baseCard.cost);
           card.summonedTurn = nextState.turnNumber;
-          card.hasSummoningSickness = !card.baseCard.hasHaste;
+          card.hasSummoningSickness = false;
           card.isRested = false;
           active.battlefield.push(card);
 
@@ -973,7 +972,7 @@ export class GameEngine {
               if (reviveTargetIdx !== -1) {
                 const revived = active.archive.splice(reviveTargetIdx, 1)[0];
                 revived.isRested = false;
-                revived.hasSummoningSickness = true;
+                revived.hasSummoningSickness = false;
                 active.battlefield.push(revived);
                 logMessage += ` (アーカイブから「${revived.baseCard.name}」を召喚)`;
               }
@@ -1302,7 +1301,7 @@ export class GameEngine {
                 if (archIdx !== -1) {
                   const revived = runePlayer.archive.splice(archIdx, 1)[0];
                   revived.isRested = false;
-                  revived.hasSummoningSickness = true;
+                  revived.hasSummoningSickness = false;
                   runePlayer.battlefield.push(revived);
                   logMessage += ` (アーカイブから「${revived.baseCard.name}」を召喚)`;
                 }

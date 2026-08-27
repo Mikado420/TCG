@@ -114,7 +114,7 @@ export const CardItem: React.FC<CardItemProps> = ({
 
   const currentAtk = cardInst ? cardInst.currentAtk : baseCard.atk;
   const currentDef = cardInst ? cardInst.currentDef : baseCard.def;
-  const currentDmg = cardInst ? cardInst.currentDmg : baseCard.dmg;
+  const currentBrk = cardInst ? (cardInst.currentBrk ?? cardInst.currentDmg ?? baseCard.brk) : baseCard.brk;
 
   const isUnit = baseCard.cardType === 'UNIT' || baseCard.cardType === 'EVOLVE_UNIT';
 
@@ -304,7 +304,7 @@ export const CardItem: React.FC<CardItemProps> = ({
           <div className="flex items-center gap-0.5 text-rose-400" title="結界ブレイク力 (BRK)">
             <Heart className={sizeConfig.statsIcon} />
             <span className="text-[9px] text-rose-300 font-sans">BRK</span>
-            <span>{currentDmg}</span>
+            <span>{currentBrk}</span>
           </div>
         </div>
       ) : (
@@ -325,10 +325,10 @@ export const CardItem: React.FC<CardItemProps> = ({
         </button>
       )}
 
-      {/* Special Badges: Summoning Sickness, Guard */}
-      {cardInst?.hasSummoningSickness && (
-        <div className="absolute top-5 right-0.5 bg-amber-600 text-amber-100 text-[8px] font-black px-1 rounded shadow">
-          酔
+      {/* Special Badges: Cant Attack, Guard */}
+      {baseCard.cantAttack && (
+        <div className="absolute top-5 right-0.5 bg-rose-700/90 text-rose-100 text-[8px] font-black px-1 rounded shadow">
+          攻禁
         </div>
       )}
       {baseCard.hasGuard && (

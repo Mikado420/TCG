@@ -402,5 +402,544 @@ export function runAllRuleTests(): TestResult[] {
     });
   }
 
+  // 8. Guard Condition Test (Only Active Guard Units Can Guard)
+  {
+    const start = performance.now();
+    const engine = new GameEngine(12345);
+    const redDeck = PRESET_DECKS[0];
+    const holyDeck = PRESET_DECKS[3];
+    const state = engine.createInitialState('test_guard', redDeck.cards, holyDeck.cards);
+
+    // Player A has attacker A-04 (ATK 30, DEF 30, BRK 1)
+    const a04Card = CARD_MAP.get('A-04')!;
+    state.playerA.battlefield.push({
+      instanceId: 'attacker_a04',
+      cardId: 'A-04',
+      baseCard: a04Card,
+      ownerId: 'PLAYER_A',
+      currentCost: 3,
+      currentAtk: 30,
+      currentDef: 30,
+      currentBrk: 1,
+      isRested: false,
+      summonedTurn: 1,
+      hasSummoningSickness: false,
+      buffs: [],
+    });
+
+    // Player B has 1 active guard (D-01) and 1 rested guard (D-02)
+    const d01Card = CARD_MAP.get('D-01')!;
+    const d02Card = CARD_MAP.get('D-02')!;
+    state.playerB.battlefield.push(
+      {
+        instanceId: 'guard_active',
+        cardId: 'D-01',
+        baseCard: d01Card,
+        ownerId: 'PLAYER_B',
+        currentCost: 1,
+        currentAtk: 0,
+        currentDef: 10,
+        currentBrk: 1,
+        isRested: false,
+        summonedTurn: 1,
+        hasSummoningSickness: false,
+        buffs: [],
+      },
+      {
+        instanceId: 'guard_rested',
+        cardId: 'D-02',
+        baseCard: d02Card,
+        ownerId: 'PLAYER_B',
+        currentCost: 2,
+        currentAtk: 0,
+        currentDef: 30,
+        currentBrk: 1,
+        isRested: true,
+        summonedTurn: 1,
+        hasSummoningSickness: false,
+        buffs: [],
+      }
+    );
+
+    state.phase = 'ACTION';
+    const attackResult = engine.step(state, {
+      type: 'ATTACK',
+      playerId: 'PLAYER_A',
+      payload: {
+        attackerInstanceId: 'attacker_a04',
+        targetType: 'PLAYER',
+      },
+    });
+
+    const guardActions = engine.getLegalActions(attackResult.nextState);
+    const hasActiveGuardAction = guardActions.some(
+      (a) => a.action.type === 'GUARD' && (a.action.payload as any).guardInstanceId === 'guard_active'
+    );
+    const hasRestedGuardAction = guardActions.some(
+      (a) => a.action.type === 'GUARD' && (a.action.payload as any).guardInstanceId === 'guard_rested'
+    );
+
+    const passed = hasActiveGuardAction && !hasRestedGuardAction;
+    results.push({
+      testId: 'test_guard_active_condition',
+      category: 'CORE_RULE',
+      name: 'ガード条件 (アクティブ時のみ防御可能)',
+      description: 'レスト状態のガードユニットはガードできず、アクティブ状態のガードユニットのみ選択可能か検証',
+      passed,
+      message: passed
+        ? 'アクティブ状態のガードユニットのみが正常にガード選択肢として生成されました。'
+        : 'レスト状態のガードユニットがガード可能になっているか、アクティブなガードが選べません。',
+      durationMs: parseFloat((performance.now() - start).toFixed(2)),
+    });
+  }
+
+  // 9. C-10 アース・トロール (自身の攻撃による破壊時ドロー)
+  {
+    const start = performance.now();
+    const engine = new GameEngine(12345);
+    const greenDeck = PRESET_DECKS[2];
+    const blueDeck = PRESET_DECKS[1];
+    const state = engine.createInitialState('test_c10', greenDeck.cards, blueDeck.cards);
+
+    const c10Card = CARD_MAP.get('C-10')!;
+    state.playerA.battlefield.push({
+      instanceId: 'attacker_c10',
+      cardId: 'C-10',
+      baseCard: c10Card,
+      ownerId: 'PLAYER_A',
+      currentCost: 5,
+      currentAtk: 40,
+      currentDef: 40,
+      currentBrk: 1,
+      isRested: false,
+      summonedTurn: 1,
+      hasSummoningSickness: false,
+      buffs: [],
+    });
+
+    const victimCard = CARD_MAP.get('B-01')!; // DEF 10
+    state.playerB.battlefield.push({
+      instanceId: 'victim_unit',
+      cardId: 'B-01',
+      baseCard: victimCard,
+      ownerId: 'PLAYER_B',
+      currentCost: 1,
+      currentAtk: 10,
+      currentDef: 10,
+      currentBrk: 1,
+      isRested: true,
+      summonedTurn: 1,
+      hasSummoningSickness: false,
+      buffs: [],
+    });
+
+    const handCountBefore = state.playerA.hand.length;
+    state.phase = 'ACTION';
+
+    const combatResult = engine.step(state, {
+      type: 'ATTACK',
+      playerId: 'PLAYER_A',
+      payload: {
+        attackerInstanceId: 'attacker_c10',
+        targetType: 'UNIT',
+        targetUnitInstanceId: 'victim_unit',
+      },
+    });
+
+    const handCountAfter = combatResult.nextState.playerA.hand.length;
+    const passed = handCountAfter === handCountBefore + 1;
+
+    results.push({
+      testId: 'test_c10_earth_troll',
+      category: 'CARD_MECHANIC',
+      name: 'C-10 アース・トロール 攻撃破壊時ドロー',
+      description: 'C-10自身の攻撃で相手ユニットを破壊した時に1ドロー効果が発動することを検証',
+      passed,
+      message: passed
+        ? 'C-10自身の攻撃によるユニット破壊時、正常に1ドローが実行されました。'
+        : 'C-10のドロー効果が実行されていません。',
+      durationMs: parseFloat((performance.now() - start).toFixed(2)),
+    });
+  }
+
+  // 10. C-14 調和の継承 (アーカイブ→アルカナ、アルカナ→手札)
+  {
+    const start = performance.now();
+    const engine = new GameEngine(12345);
+    const redDeck = PRESET_DECKS[0];
+    const greenDeck = PRESET_DECKS[2];
+    const state = engine.createInitialState('test_c14', redDeck.cards, greenDeck.cards);
+
+    const c14Card = CARD_MAP.get('C-14')!;
+    state.playerB.runes.push({
+      instanceId: 'rune_c14',
+      cardId: 'C-14',
+      baseCard: c14Card,
+      ownerId: 'PLAYER_B',
+      currentCost: 2,
+      currentAtk: 0,
+      currentDef: 0,
+      currentBrk: 0,
+      isRested: false,
+      summonedTurn: 1,
+      hasSummoningSickness: false,
+      buffs: [],
+    });
+
+    // Put a card in Player B's archive and arcana
+    const archCard = state.playerB.deck.shift()!;
+    state.playerB.archive.push(archCard);
+    const arcCard = state.playerB.deck.shift()!;
+    state.playerB.arcana.push({ instance: arcCard, isRested: false });
+
+    state.phase = 'ARCANA';
+    const setArcanaCard = state.playerA.hand[0];
+
+    const setArcanaResult = engine.step(state, {
+      type: 'SET_ARCANA',
+      playerId: 'PLAYER_A',
+      payload: { cardInstanceId: setArcanaCard.instanceId },
+    });
+
+    const isTriggered = setArcanaResult.nextState.phase === 'RUNE_STEP';
+    const triggerResult = engine.step(setArcanaResult.nextState, {
+      type: 'TRIGGER_RUNE',
+      playerId: 'PLAYER_B',
+      payload: { runeInstanceId: 'rune_c14', activate: true },
+    });
+
+    const finalB = triggerResult.nextState.playerB;
+    // Archive had 1 (archCard) + 1 (C-14 sent on trigger) - 1 (archCard moved to arcana) = 1
+    // Hand had 4 + 1 (arcCard moved to hand) = 5
+    const passed = isTriggered && finalB.archive.length === 1 && finalB.hand.length === 5;
+
+    results.push({
+      testId: 'test_c14_harmony_order',
+      category: 'CARD_MECHANIC',
+      name: 'C-14 調和の継承 順序解決 (アーカイブ→アルカナ→手札)',
+      description: '相手がアルカナ配置時、アーカイブからアルカナに置き、アルカナから手札に戻す順序を検証',
+      passed,
+      message: passed
+        ? 'C-14 調和の継承がアーカイブ→アルカナ→手札の正しい順序で処理されました。'
+        : 'C-14 調和の継承の処理が不正です。',
+      durationMs: parseFloat((performance.now() - start).toFixed(2)),
+    });
+  }
+
+  // 11. D-14 三重聖壁 (自分が攻撃された時のみ相手3体レスト)
+  {
+    const start = performance.now();
+    const engine = new GameEngine(12345);
+    const redDeck = PRESET_DECKS[0];
+    const holyDeck = PRESET_DECKS[3];
+    const state = engine.createInitialState('test_d14', redDeck.cards, holyDeck.cards);
+
+    const d14Card = CARD_MAP.get('D-14')!;
+    state.playerB.runes.push({
+      instanceId: 'rune_d14',
+      cardId: 'D-14',
+      baseCard: d14Card,
+      ownerId: 'PLAYER_B',
+      currentCost: 3,
+      currentAtk: 0,
+      currentDef: 0,
+      currentBrk: 0,
+      isRested: false,
+      summonedTurn: 1,
+      hasSummoningSickness: false,
+      buffs: [],
+    });
+
+    // Player A has 3 active units
+    for (let i = 1; i <= 3; i++) {
+      const uCard = CARD_MAP.get('A-01')!;
+      state.playerA.battlefield.push({
+        instanceId: `pA_unit_${i}`,
+        cardId: 'A-01',
+        baseCard: uCard,
+        ownerId: 'PLAYER_A',
+        currentCost: 1,
+        currentAtk: 10,
+        currentDef: 10,
+        currentBrk: 1,
+        isRested: false,
+        summonedTurn: 1,
+        hasSummoningSickness: false,
+        buffs: [],
+      });
+    }
+
+    state.phase = 'ACTION';
+    const attackResult = engine.step(state, {
+      type: 'ATTACK',
+      playerId: 'PLAYER_A',
+      payload: {
+        attackerInstanceId: 'pA_unit_1',
+        targetType: 'PLAYER',
+      },
+    });
+
+    const isTriggerPending = attackResult.nextState.phase === 'RUNE_STEP';
+    const triggerResult = engine.step(attackResult.nextState, {
+      type: 'TRIGGER_RUNE',
+      playerId: 'PLAYER_B',
+      payload: { runeInstanceId: 'rune_d14', activate: true },
+    });
+
+    const allRested = triggerResult.nextState.playerA.battlefield.every((u) => u.isRested);
+    const passed = isTriggerPending && allRested;
+
+    results.push({
+      testId: 'test_d14_triple_wall',
+      category: 'CARD_MECHANIC',
+      name: 'D-14 三重聖壁 迎撃レスト判定',
+      description: 'プレイヤー直接攻撃時にD-14が発動し、相手ユニット3体をレストすることを検証',
+      passed,
+      message: passed
+        ? 'D-14 三重聖壁が正常に発動し、相手ユニット3体をレストしました。'
+        : 'D-14 三重聖壁のレスト処理が不正です。',
+      durationMs: parseFloat((performance.now() - start).toFixed(2)),
+    });
+  }
+
+  // 12. Deckout End-Turn Loss Rule (0 Deck loses only at END_TURN)
+  {
+    const start = performance.now();
+    const engine = new GameEngine(12345);
+    const redDeck = PRESET_DECKS[0];
+    const blueDeck = PRESET_DECKS[1];
+    const state = engine.createInitialState('test_deckout', redDeck.cards, blueDeck.cards);
+
+    // Empty Player A's deck
+    state.playerA.deck = [];
+    state.phase = 'ACTION';
+
+    // Player A performs an action; game should NOT be finished yet
+    const notFinishedYet = state.gameStatus === 'IN_PROGRESS';
+
+    // Now Player A ends turn
+    const endTurnResult = engine.step(state, {
+      type: 'END_TURN',
+      playerId: 'PLAYER_A',
+      payload: {},
+    });
+
+    const passed =
+      notFinishedYet &&
+      endTurnResult.nextState.gameStatus === 'FINISHED' &&
+      endTurnResult.nextState.winner === 'PLAYER_B';
+
+    results.push({
+      testId: 'test_deckout_end_turn_loss',
+      category: 'CORE_RULE',
+      name: 'デッキ切れ敗北タイミング検証 (ターン終了時判定)',
+      description: 'デッキが0枚になった瞬間ではなく、ターン終了時に敗北となるルールVer.0.03を検証',
+      passed,
+      message: passed
+        ? 'ターン終了時のデッキ0枚判定によって正常に敗北が成立しました。'
+        : 'デッキ切れ敗北のタイミング処理が不正です。',
+      durationMs: parseFloat((performance.now() - start).toFixed(2)),
+    });
+  }
+
+  // 13. No Summoning Sickness (Units Can Attack On Summoned Turn)
+  {
+    const start = performance.now();
+    const engine = new GameEngine(12345);
+    const redDeck = PRESET_DECKS[0];
+    const blueDeck = PRESET_DECKS[1];
+    const state = engine.createInitialState('test_no_sickness', redDeck.cards, blueDeck.cards);
+
+    // Give Player A active arcana
+    for (let i = 0; i < 5; i++) {
+      state.playerA.arcana.push({ instance: state.playerA.deck.shift()!, isRested: false });
+    }
+
+    const a04Card = CARD_MAP.get('A-04')!; // Normal Unit (No Haste keyword)
+    state.playerA.hand.push({
+      instanceId: 'fresh_unit',
+      cardId: 'A-04',
+      baseCard: a04Card,
+      ownerId: 'PLAYER_A',
+      currentCost: 3,
+      currentAtk: 30,
+      currentDef: 30,
+      currentBrk: 1,
+      isRested: false,
+      summonedTurn: 1,
+      hasSummoningSickness: false,
+      buffs: [],
+    });
+
+    state.phase = 'ACTION';
+    const summonResult = engine.step(state, {
+      type: 'PLAY_UNIT',
+      playerId: 'PLAYER_A',
+      payload: { cardInstanceId: 'fresh_unit' },
+    });
+
+    const actions = engine.getLegalActions(summonResult.nextState);
+    const canAttackFresh = actions.some(
+      (a) => a.action.type === 'ATTACK' && (a.action.payload as any).attackerInstanceId === 'fresh_unit'
+    );
+
+    results.push({
+      testId: 'test_no_summoning_sickness',
+      category: 'CORE_RULE',
+      name: '召喚酔い廃止 (召喚ターン即時攻撃可能)',
+      description: 'ルールVer.0.03に基づき召喚されたユニットがそのターンに攻撃可能か検証',
+      passed: canAttackFresh,
+      message: canAttackFresh
+        ? '召喚したばかりの通常ユニットがそのターン即座に攻撃可能であることを確認しました。'
+        : '召喚したユニットが攻撃できません (召喚酔い判定が残存しています)。',
+      durationMs: parseFloat((performance.now() - start).toFixed(2)),
+    });
+  }
+
+  // 14. Field Limit (Max 6 Units)
+  {
+    const start = performance.now();
+    const engine = new GameEngine(12345);
+    const redDeck = PRESET_DECKS[0];
+    const blueDeck = PRESET_DECKS[1];
+    const state = engine.createInitialState('test_field_limit', redDeck.cards, blueDeck.cards);
+
+    for (let i = 0; i < 10; i++) {
+      state.playerA.arcana.push({ instance: state.playerA.deck.shift()!, isRested: false });
+    }
+
+    // Fill field to 6 units
+    for (let i = 1; i <= 6; i++) {
+      state.playerA.battlefield.push({
+        instanceId: `field_u_${i}`,
+        cardId: 'A-01',
+        baseCard: CARD_MAP.get('A-01')!,
+        ownerId: 'PLAYER_A',
+        currentCost: 1,
+        currentAtk: 10,
+        currentDef: 10,
+        currentBrk: 1,
+        isRested: false,
+        summonedTurn: 1,
+        hasSummoningSickness: false,
+        buffs: [],
+      });
+    }
+
+    state.playerA.hand.push({
+      instanceId: 'extra_unit',
+      cardId: 'A-01',
+      baseCard: CARD_MAP.get('A-01')!,
+      ownerId: 'PLAYER_A',
+      currentCost: 1,
+      currentAtk: 10,
+      currentDef: 10,
+      currentBrk: 1,
+      isRested: false,
+      summonedTurn: 1,
+      hasSummoningSickness: false,
+      buffs: [],
+    });
+
+    state.phase = 'ACTION';
+    const actions = engine.getLegalActions(state);
+    const canSummon7th = actions.some((a) => a.action.type === 'PLAY_UNIT');
+
+    results.push({
+      testId: 'test_field_limit_6',
+      category: 'CORE_RULE',
+      name: 'フィールド上限6体制限検証',
+      description: 'フィールドに6体存在する状態で7体目の召喚が禁止されることを検証',
+      passed: !canSummon7th,
+      message: !canSummon7th
+        ? 'フィールド6体上限により7体目の召喚行動が正しく遮断されました。'
+        : 'フィールド6体上限を超えて召喚可能になっています。',
+      durationMs: parseFloat((performance.now() - start).toFixed(2)),
+    });
+  }
+
+  // 15. Arcana Faction Requirement (Color Constraint)
+  {
+    const start = performance.now();
+    const engine = new GameEngine(12345);
+    const redDeck = PRESET_DECKS[0];
+    const blueDeck = PRESET_DECKS[1];
+    const state = engine.createInitialState('test_faction_req', redDeck.cards, blueDeck.cards);
+
+    // Player A has 3 NEUTRAL arcana (N-01)
+    const n01Card = CARD_MAP.get('N-01')!;
+    state.playerA.arcana = [1, 2, 3].map((i) => ({
+      instance: {
+        instanceId: `neutral_arc_${i}`,
+        cardId: 'N-01',
+        baseCard: n01Card,
+        ownerId: 'PLAYER_A',
+        currentCost: 2,
+        currentAtk: 20,
+        currentDef: 10,
+        currentBrk: 1,
+        isRested: false,
+        summonedTurn: 1,
+        hasSummoningSickness: false,
+        buffs: [],
+      },
+      isRested: false,
+    }));
+
+    // Player A holds a RED card (A-01: Cost 1) and a NEUTRAL card (N-02: Cost 1)
+    state.playerA.hand = [
+      {
+        instanceId: 'hand_red_1',
+        cardId: 'A-01',
+        baseCard: CARD_MAP.get('A-01')!,
+        ownerId: 'PLAYER_A',
+        currentCost: 1,
+        currentAtk: 10,
+        currentDef: 10,
+        currentBrk: 1,
+        isRested: false,
+        summonedTurn: 1,
+        hasSummoningSickness: false,
+        buffs: [],
+      },
+      {
+        instanceId: 'hand_neutral_1',
+        cardId: 'N-02',
+        baseCard: CARD_MAP.get('N-02')!,
+        ownerId: 'PLAYER_A',
+        currentCost: 1,
+        currentAtk: 10,
+        currentDef: 10,
+        currentBrk: 1,
+        isRested: false,
+        summonedTurn: 1,
+        hasSummoningSickness: false,
+        buffs: [],
+      },
+    ];
+
+    state.phase = 'ACTION';
+    const actions = engine.getLegalActions(state);
+    const canPlayRed = actions.some(
+      (a) => (a.action.payload as any).cardInstanceId === 'hand_red_1'
+    );
+    const canPlayNeutral = actions.some(
+      (a) => (a.action.payload as any).cardInstanceId === 'hand_neutral_1'
+    );
+
+    const passed = !canPlayRed && canPlayNeutral;
+    results.push({
+      testId: 'test_arcana_faction_requirement',
+      category: 'CORE_RULE',
+      name: 'アルカナ系統条件 (無系統アルカナのみでの5系統プレイ不可)',
+      description: 'アルカナに無系統カードしかない場合、朱など5系統カードは使用不可、無系統は使用可能を検証',
+      passed,
+      message: passed
+        ? '無系統アルカナのみの場合、系統カード使用不可および無系統カード使用可能が正しく判定されました。'
+        : 'アルカナ系統条件の判定が不正です。',
+      durationMs: parseFloat((performance.now() - start).toFixed(2)),
+    });
+  }
+
   return results;
 }
