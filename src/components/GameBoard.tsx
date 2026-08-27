@@ -105,17 +105,44 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [showMenuDrawer, setShowMenuDrawer] = useState<boolean>(false);
 
   const autoPlayTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const matchIdRef = useRef<string>('');
+  const isActionExecutingRef = useRef<boolean>(false);
+
+  // Invariant verification check
+  const verifyGameInvariants = (state: GameState, logSource: string) => {
+    const checkPlayer = (p: typeof state.playerA, role: string) => {
+      const total = p.deck.length + p.hand.length + p.battlefield.length + p.arcana.length + p.archive.length;
+      if (total !== 40) {
+        console.warn(
+          `[Invariant Alert][${logSource}] Player ${role} (${p.playerId}) total card count = ${total} (expected 40). ` +
+          `Deck:${p.deck.length}, Hand:${p.hand.length}, Field:${p.battlefield.length}, Arcana:${p.arcana.length}, Archive:${p.archive.length}`
+        );
+      }
+    };
+    checkPlayer(state.playerA, 'P1');
+    checkPlayer(state.playerB, 'P2');
+  };
 
   // Initialize Match
   const startNewMatch = () => {
-    if (autoPlayTimerRef.current) clearInterval(autoPlayTimerRef.current);
+    if (autoPlayTimerRef.current) {
+      clearInterval(autoPlayTimerRef.current);
+      autoPlayTimerRef.current = null;
+    }
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
     setIsAutoPlaying(false);
+    isActionExecutingRef.current = false;
 
     const deckA = allAvailableDecks.find((d) => d.deckId === deckAId) || PRESET_DECKS[0];
     const deckB = allAvailableDecks.find((d) => d.deckId === deckBId) || PRESET_DECKS[1];
+    const newMatchId = `game_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    matchIdRef.current = newMatchId;
 
     const state = engine.createInitialState(
-      `game_${Date.now()}`,
+      newMatchId,
       deckA.cards,
       deckB.cards,
       `${deckA.deckName.split(' ')[0]} (P1)`,
@@ -127,6 +154,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       Date.now()
     );
 
+    verifyGameInvariants(state, 'InitialState');
     setGameState(state);
     setGameLogs(engine.getLogs());
     setLatestAIDecision(null);
@@ -143,16 +171,26 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     return () => {
       if (autoPlayTimerRef.current) clearInterval(autoPlayTimerRef.current);
       if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+      matchIdRef.current = '';
     };
   }, [deckAId, deckBId]);
 
-  // Execute an action
-  const handleExecuteAction = async (action: Action) => {
-    if (!gameState || gameState.gameStatus !== 'IN_PROGRESS' || isProcessingStep) return;
+  // Execute an action with synchronous locking and matchId check
+  const handleExecuteAction = (action: Action) => {
+    if (!gameState || gameState.gameStatus !== 'IN_PROGRESS' || isProcessingStep || isActionExecutingRef.current) {
+      return;
+    }
 
+    const currentMatch = matchIdRef.current;
+    isActionExecutingRef.current = true;
     setIsProcessingStep(true);
+
     try {
+      if (matchIdRef.current !== currentMatch) return;
+
       const { nextState, log } = engine.step(gameState, action);
+      verifyGameInvariants(nextState, `Action_${action.type}`);
+
       setGameState(nextState);
       setGameLogs((prev) => [...prev, log]);
 
@@ -162,15 +200,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
       const nextActions = engine.getLegalActions(nextState);
       setLegalActions(nextActions);
+    } catch (err) {
+      console.error('[handleExecuteAction Error]:', err);
     } finally {
+      isActionExecutingRef.current = false;
       setIsProcessingStep(false);
     }
   };
 
-  // Perform AI turn execution
+  // Perform AI turn execution with matchId guard
   const executeAITurn = async () => {
-    if (!gameState || gameState.gameStatus !== 'IN_PROGRESS' || isProcessingStep) return;
+    if (!gameState || gameState.gameStatus !== 'IN_PROGRESS' || isProcessingStep || isActionExecutingRef.current) {
+      return;
+    }
 
+    const currentMatch = matchIdRef.current;
     const activePlayer = gameState.activePlayer;
     let effectivePlayerId: PlayerId = activePlayer;
     let effectiveIsAI = activePlayer === 'PLAYER_A' ? playerAIsAI : playerBIsAI;
@@ -185,7 +229,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     if (!effectiveIsAI) return;
 
+    isActionExecutingRef.current = true;
     setIsProcessingStep(true);
+
     try {
       const currentLegal = engine.getLegalActions(gameState);
       if (currentLegal.length === 0) return;
@@ -197,9 +243,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         useGeminiForAI
       );
 
+      // Race condition check: make sure user didn't reset match while AI was thinking
+      if (matchIdRef.current !== currentMatch) {
+        return;
+      }
+
       setLatestAIDecision(decision);
 
       const { nextState, log } = engine.step(gameState, decision.selectedAction);
+      verifyGameInvariants(nextState, `AI_Action_${decision.selectedAction.type}`);
+
       setGameState(nextState);
       setGameLogs((prev) => [...prev, log]);
 
@@ -208,6 +261,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     } catch (err) {
       console.error('AI Turn Error:', err);
     } finally {
+      isActionExecutingRef.current = false;
       setIsProcessingStep(false);
     }
   };
@@ -875,7 +929,20 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             <button
               id="player-arcana-hud"
               data-dropzone="ARCANA_ZONE"
-              onClick={() => setArcanaModalTarget('A')}
+              onClick={() => {
+                if (selectedHandInstanceId && gameState.phase === 'ARCANA') {
+                  const arcAction = legalActions.find(
+                    (a) =>
+                      a.action.type === 'SET_ARCANA' &&
+                      (a.action.payload as any)?.cardInstanceId === selectedHandInstanceId
+                  );
+                  if (arcAction) {
+                    handleExecuteAction(arcAction.action);
+                    return;
+                  }
+                }
+                setArcanaModalTarget('A');
+              }}
               className={`flex items-center gap-0.5 px-2 py-0.5 rounded-full border font-bold transition-all ${
                 canPlaceArcana
                   ? 'bg-amber-950 border-amber-400 ring-2 ring-amber-400 text-amber-200 animate-pulse-ring'
@@ -883,7 +950,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   ? 'bg-amber-900 border-amber-300 ring-4 ring-amber-300 text-white scale-110'
                   : 'bg-stone-900 hover:bg-stone-800 border-stone-800 text-amber-300'
               }`}
-              title="アルカナ確認 / 手札をドロップしてセット"
+              title={selectedHandInstanceId && gameState.phase === 'ARCANA' ? '選択したカードをアルカナにセット' : 'アルカナ確認 / 手札をドロップしてセット'}
             >
               <Flame className="w-3 h-3 text-amber-400 fill-amber-400" />
               <span>アルカナ:</span>

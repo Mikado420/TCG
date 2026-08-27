@@ -10,29 +10,40 @@ import { DeckBuilder } from './components/DeckBuilder';
 import { DebugView } from './components/DebugView';
 import { CardDetailModal } from './components/CardDetailModal';
 import { OrientationWarning } from './components/OrientationWarning';
+import { pwaController, PWAState } from './pwa';
+import { safeStorage } from './utils/storage';
+import { Sparkles, RefreshCw, X } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>('BATTLE');
   const [hasApiKey, setHasApiKey] = useState<boolean>(false);
   const [inspectedCard, setInspectedCard] = useState<CardData | null>(null);
 
-  // Custom Decks state stored in LocalStorage
+  // PWA update notification state
+  const [pwaState, setPwaState] = useState<PWAState>({
+    isRegistered: false,
+    hasUpdate: false,
+    waitingWorker: null,
+  });
+  const [dismissUpdateBanner, setDismissUpdateBanner] = useState<boolean>(false);
+
+  // Custom Decks state stored safely in LocalStorage
   const [customDecks, setCustomDecks] = useState<Deck[]>(() => {
-    try {
-      const saved = localStorage.getItem('tcg_custom_decks');
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch (e) {
-      console.warn('Failed to load custom decks from localStorage');
-    }
-    return [];
+    return safeStorage.get<Deck[]>('tcg_custom_decks', []);
   });
 
   // Verification Reports & Replays
   const [historicalReports, setHistoricalReports] = useState<VerificationReport[]>([]);
   const [currentReport, setCurrentReport] = useState<VerificationReport | null>(null);
   const [replays, setReplays] = useState<GameReplay[]>([]);
+
+  // Subscribe to PWA updates
+  useEffect(() => {
+    const unsubscribe = pwaController.subscribe((state) => {
+      setPwaState(state);
+    });
+    return unsubscribe;
+  }, []);
 
   // Check backend health & API key status
   useEffect(() => {
@@ -44,7 +55,8 @@ export const App: React.FC = () => {
         }
       })
       .catch((err) => {
-        console.warn('Health check failed:', err);
+        // Offline / GitHub Pages fallback
+        console.log('Health check skipped (running in offline/static client mode)');
       });
   }, []);
 
@@ -58,11 +70,7 @@ export const App: React.FC = () => {
       } else {
         updated = [deck, ...prev];
       }
-      try {
-        localStorage.setItem('tcg_custom_decks', JSON.stringify(updated));
-      } catch (e) {
-        console.warn('Failed to persist deck');
-      }
+      safeStorage.set('tcg_custom_decks', updated);
       return updated;
     });
     alert(`デッキ「${deck.deckName} (${deck.deckVersion})」を保存しました。`);
@@ -85,6 +93,32 @@ export const App: React.FC = () => {
     <div className="h-full h-[100dvh] w-full bg-stone-950 text-stone-100 flex flex-col font-sans overflow-hidden select-none">
       {/* Landscape orientation alert for portrait mobile screens */}
       <OrientationWarning />
+
+      {/* Discreet PWA Update Banner (Never forces auto-reload during battle) */}
+      {pwaState.hasUpdate && !dismissUpdateBanner && (
+        <div className="w-full bg-gradient-to-r from-amber-600 to-amber-700 text-stone-950 px-3 py-1.5 flex items-center justify-between text-xs font-bold shadow-lg z-50 animate-fade-in">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-stone-950 fill-stone-950" />
+            <span>新しいバージョンが利用可能です。</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => pwaController.applyUpdate()}
+              className="px-3 py-0.5 rounded-full bg-stone-950 hover:bg-stone-900 text-amber-300 text-[11px] font-black flex items-center gap-1 shadow-sm active:scale-95 transition-all"
+            >
+              <RefreshCw className="w-3 h-3" />
+              <span>今すぐ更新</span>
+            </button>
+            <button
+              onClick={() => setDismissUpdateBanner(true)}
+              className="p-1 hover:bg-amber-800 rounded-full text-stone-900 transition-colors"
+              title="後で"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Top Slim Navigation (Hidden during BATTLE to maximize 100% full screen game client) */}
       {activeTab !== 'BATTLE' && (
@@ -154,3 +188,4 @@ export const App: React.FC = () => {
 };
 
 export default App;
+

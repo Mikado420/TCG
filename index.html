@@ -2,16 +2,41 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>自作TCG シミュレーター & AI検証環境</title>
-    <meta name="description" content="全80枚カードプールVer.2.2、完全準拠のGameEngine、AI意思決定＆評価、大量検証シミュレーション環境" />
+    <meta name="description" content="全80枚カードプール、GameEngine、AI検証＆オンライン/オフラインTCGシミュレーター" />
+    
+    <!-- PWA & Mobile Web App Metadata -->
+    <meta name="theme-color" content="#0c0a09" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="TCG Arena" />
+    <meta name="format-detection" content="telephone=no" />
+    
+    <!-- Icons & Manifest -->
+    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+    <link rel="apple-touch-icon" href="./icon.svg" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+
+    <!-- OpenGraph / Twitter -->
     <meta property="og:title" content="自作TCG シミュレーター & AI検証環境" />
-    <meta property="og:description" content="全80枚カードプールVer.2.2、完全準拠のGameEngine、AI意思決定＆評価、大量検証シミュレーション環境" />
+    <meta property="og:description" content="全80枚カードプール、GameEngine、AI検証＆オンライン/オフラインTCGシミュレーター" />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
   </head>
-  <body class="bg-stone-950 text-stone-100 antialiased">
-    <div id="root"></div>
+  <body class="bg-stone-950 text-stone-100 antialiased overflow-hidden select-none">
+    <div id="root">
+      <!-- Fallback Loading State -->
+      <div id="app-loading" style="height:100vh;height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:#0c0a09;color:#d6d3d1;font-family:sans-serif;">
+        <div style="width:36px;height:36px;border:3px solid #78716c;border-top-color:#f59e0b;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px;"></div>
+        <div style="font-weight:bold;font-size:14px;letter-spacing:0.05em;color:#f59e0b;">TCG ARENA</div>
+        <div style="font-size:11px;color:#78716c;margin-top:4px;">データを読み込み中...</div>
+      </div>
+      <style>
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      </style>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
