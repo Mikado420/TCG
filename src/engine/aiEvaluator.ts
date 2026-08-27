@@ -38,6 +38,7 @@ export class AIEvaluator {
             card: u.baseCard,
             currentAtk: stats.atk,
             currentDef: stats.def,
+            currentBrk: stats.brk,
             currentDmg: stats.dmg,
             isRested: u.isRested,
             hasSummoningSickness: u.hasSummoningSickness,
@@ -62,6 +63,7 @@ export class AIEvaluator {
             card: u.baseCard,
             currentAtk: stats.atk,
             currentDef: stats.def,
+            currentBrk: stats.brk,
             currentDmg: stats.dmg,
             isRested: u.isRested,
             hasSummoningSickness: u.hasSummoningSickness,
@@ -89,7 +91,7 @@ export class AIEvaluator {
 
     let boardAdvantage = 5.0;
     let handAdvantage = 5.0;
-    let hpAdvantage = (me.hp / 20) * 5.0 + ((20 - opp.hp) / 20) * 5.0;
+    let hpAdvantage = (me.hp / 5.0) * 5.0 + ((5 - opp.hp) / 5.0) * 5.0;
     let resourceAdvantage = 5.0;
     let pressure = 5.0;
     let lethalPotential = 0.0;
@@ -164,20 +166,20 @@ export class AIEvaluator {
       case 'ATTACK': {
         const payload = act.payload as { attackerInstanceId: string; targetType: 'PLAYER' | 'UNIT'; targetUnitInstanceId?: string };
         const attacker = me.battlefield.find((u) => u.instanceId === payload.attackerInstanceId);
-        const stats = attacker ? this.engine.calculateEffectiveStats(attacker, me, opp) : { atk: 0, def: 0, dmg: 0 };
+        const stats = attacker ? this.engine.calculateEffectiveStats(attacker, me, opp) : { atk: 0, def: 0, brk: 0, dmg: 0 };
 
         if (payload.targetType === 'PLAYER') {
           pressure = 8.5;
-          if (opp.hp <= stats.dmg) {
+          if (opp.hp <= stats.brk) {
             lethalPotential = 10.0;
             pressure = 10.0;
-            rationale = `リーサル（直接トドメ）。勝利を決定づける攻撃。`;
+            rationale = `リーサル（直接結界ブレイク）。勝利を決定づける攻撃。`;
           } else {
-            rationale = `相手プレイヤーへ直接${stats.dmg}点ダメージを与え、ライフを詰める。`;
+            rationale = `相手プレイヤーへ直接BRK ${stats.brk}ダメージを与え、結界を削る。`;
           }
         } else if (payload.targetType === 'UNIT' && payload.targetUnitInstanceId) {
           const defender = opp.battlefield.find((u) => u.instanceId === payload.targetUnitInstanceId);
-          const defStats = defender ? this.engine.calculateEffectiveStats(defender, opp, me) : { atk: 0, def: 0, dmg: 0 };
+          const defStats = defender ? this.engine.calculateEffectiveStats(defender, opp, me) : { atk: 0, def: 0, brk: 0, dmg: 0 };
 
           if (stats.atk > defStats.def) {
             boardAdvantage = 9.0;

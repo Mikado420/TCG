@@ -87,7 +87,7 @@ export const DebugView: React.FC = () => {
       <div className="bg-stone-900 border border-stone-800 rounded-2xl p-4 shadow-lg space-y-3">
         <h3 className="text-sm font-black text-stone-200 flex items-center gap-2">
           <Code className="w-4 h-4 text-amber-400" />
-          カードプール Ver.2.2 全属性 JSONエクスプローラー
+          カードプール Ver.2.3 全属性 JSONエクスプローラー
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4">

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CardUsageStats, MatchupStat, VerificationReport } from '../types/game';
+import { CARD_POOL_VERSION } from '../data/cards';
 import {
   BarChart3,
   TrendingUp,
@@ -91,7 +92,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
             </span>
           </div>
           <p className="text-xs text-stone-400">
-            実施日時: {new Date(report.timestamp).toLocaleString()} / Card Pool Ver.2.2
+            実施日時: {new Date(report.timestamp).toLocaleString()} / Card Pool {CARD_POOL_VERSION}
           </p>
         </div>
 

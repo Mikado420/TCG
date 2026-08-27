@@ -589,7 +589,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             <span className="font-black truncate max-w-[80px] sm:max-w-[120px]">{pB.name}</span>
           </div>
 
-          {/* Opponent HP (Targetable during attacks) */}
+          {/* Opponent HP / Barrier (Targetable during attacks) */}
           <div
             data-dropzone="OPPONENT_LEADER"
             onClick={() => {
@@ -607,11 +607,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 ? 'bg-rose-900 border-rose-400 ring-4 ring-rose-400 scale-110'
                 : 'bg-stone-900 border-stone-800'
             }`}
-            title="相手リーダーHP"
+            title="相手リーダー結界"
           >
-            <Heart className="w-3 h-3 text-rose-500 fill-rose-500" />
+            <Shield className="w-3 h-3 text-rose-500 fill-rose-500" />
+            <span className="text-[9px] text-rose-300 font-bold">結界</span>
             <span className="text-xs font-black font-mono text-white">{pB.hp}</span>
-            <span className="text-[9px] text-stone-500 font-mono">/20</span>
+            <span className="text-[9px] text-stone-500 font-mono">/5</span>
             {selectedAttackerInstanceId && canAttackOpponentPlayer && (
               <span className="text-[8px] font-black bg-rose-600 text-white px-1 rounded animate-pulse">
                 攻撃可
@@ -903,11 +904,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             <span className="font-black truncate max-w-[80px] sm:max-w-[120px]">{pA.name}</span>
           </div>
 
-          {/* Player HP */}
-          <div className="flex items-center gap-1 bg-stone-900 px-2 py-0.5 rounded-full border border-stone-800">
-            <Heart className="w-3 h-3 text-rose-500 fill-rose-500" />
+          {/* Player HP / Barrier */}
+          <div className="flex items-center gap-1 bg-stone-900 px-2 py-0.5 rounded-full border border-stone-800" title="プレイヤー結界">
+            <Shield className="w-3 h-3 text-rose-500 fill-rose-500" />
+            <span className="text-[9px] text-rose-300 font-bold">結界</span>
             <span className="text-xs font-black font-mono text-white">{pA.hp}</span>
-            <span className="text-[9px] text-stone-500 font-mono">/20</span>
+            <span className="text-[9px] text-stone-500 font-mono">/5</span>
           </div>
 
           {/* Deck, Archive, Arcana (ARCANA is prominent drop target during ARCANA phase) */}

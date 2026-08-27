@@ -1,6 +1,6 @@
 /**
  * Custom TCG Core Type Definitions
- * Specification Version 2.2
+ * Specification Version: Rules Ver.0.03 / CardPool Ver.2.3
  */
 
 export type FactionCode = 'RED' | 'BLUE' | 'GREEN' | 'HOLY' | 'DARK' | 'NEUTRAL';
@@ -44,7 +44,8 @@ export interface CardData {
   cost: number;
   atk: number;
   def: number;
-  dmg: number;
+  brk: number;
+  dmg?: number; // Backward compatibility alias for brk
   effectsText: string;
   effectKeywords: string[];
   evolutionRequirement?: EvolutionRequirement;
@@ -56,7 +57,7 @@ export interface CardData {
 
 export interface CardBuff {
   id: string;
-  type: 'ATK' | 'DEF' | 'DMG' | 'GUARD' | 'IGNORE_GUARD' | 'CAN_ATTACK';
+  type: 'ATK' | 'DEF' | 'BRK' | 'DMG' | 'GUARD' | 'IGNORE_GUARD' | 'CAN_ATTACK' | 'CANT_BE_GUARDED';
   value: number;
   duration: 'THIS_TURN' | 'NEXT_TURN_START' | 'PERMANENT';
   appliedTurn: number;
@@ -71,7 +72,8 @@ export interface CardInstance {
   currentCost: number;
   currentAtk: number;
   currentDef: number;
-  currentDmg: number;
+  currentBrk: number;
+  currentDmg?: number; // Alias for currentBrk
   isRested: boolean;
   summonedTurn: number;
   hasSummoningSickness: boolean;
@@ -91,14 +93,14 @@ export type PlayerId = 'PLAYER_A' | 'PLAYER_B';
 export interface PlayerState {
   playerId: PlayerId;
   name: string;
-  hp: number;
-  maxHp: number;
+  hp: number; // 結界 (Barrier value, starts at 5)
+  maxHp: number; // 最大結界 (5)
   deck: CardInstance[];
   hand: CardInstance[];
   arcana: ArcanaSlot[];
-  battlefield: CardInstance[];
-  runes: CardInstance[];
-  domain: CardInstance | null;
+  battlefield: CardInstance[]; // Max 6 units
+  runes: CardInstance[]; // Max 2 runes
+  domain: CardInstance | null; // Max 1 domain
   archive: CardInstance[];
   hasPlacedArcanaThisTurn: boolean;
   isAI: boolean;
@@ -106,7 +108,7 @@ export interface PlayerState {
   // Metrics tracked within a game for this player
   unitsKilledThisTurn: number;
   unitsDestroyedCount: number;
-  totalDamageDealt: number;
+  totalDamageDealt: number; // Total barrier broken
   cardsDrawnCount: number;
 }
 
@@ -252,7 +254,7 @@ export interface AIDecisionLog {
 }
 
 export interface PlayerSnapshot {
-  hp: number;
+  hp: number; // 結界
   handCount: number;
   arcanaCount: number;
   activeArcanaCount: number;
@@ -380,7 +382,7 @@ export interface VisibleGameState {
   phase: GamePhase;
   me: {
     playerId: PlayerId;
-    hp: number;
+    hp: number; // 結界
     maxHp: number;
     hand: CardData[];
     arcana: { card: CardData; isRested: boolean }[];
@@ -389,7 +391,8 @@ export interface VisibleGameState {
       card: CardData;
       currentAtk: number;
       currentDef: number;
-      currentDmg: number;
+      currentBrk: number;
+      currentDmg?: number;
       isRested: boolean;
       hasSummoningSickness: boolean;
       hasGuard: boolean;
@@ -401,7 +404,7 @@ export interface VisibleGameState {
   };
   opponent: {
     playerId: PlayerId;
-    hp: number;
+    hp: number; // 結界
     maxHp: number;
     handCount: number;
     arcana: { card: CardData; isRested: boolean }[];
@@ -410,7 +413,8 @@ export interface VisibleGameState {
       card: CardData;
       currentAtk: number;
       currentDef: number;
-      currentDmg: number;
+      currentBrk: number;
+      currentDmg?: number;
       isRested: boolean;
       hasSummoningSickness: boolean;
       hasGuard: boolean;

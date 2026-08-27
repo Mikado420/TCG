@@ -194,8 +194,8 @@ export const ReplayViewer: React.FC<ReplayViewerProps> = ({ replays, onInspectCa
                 {activeReplay.deckB.deckName} (後攻)
               </span>
               <div className="flex items-center gap-1 text-rose-400 font-mono font-bold text-sm">
-                <Heart className="w-4 h-4 fill-rose-500" />
-                <span>{state.playerB.hp} / 20</span>
+                <Shield className="w-4 h-4 text-rose-500 fill-rose-500" />
+                <span>結界: {state.playerB.hp} / 5</span>
               </div>
             </div>
 
@@ -245,8 +245,8 @@ export const ReplayViewer: React.FC<ReplayViewerProps> = ({ replays, onInspectCa
                 {activeReplay.deckA.deckName} (先攻)
               </span>
               <div className="flex items-center gap-1 text-rose-400 font-mono font-bold text-sm">
-                <Heart className="w-4 h-4 fill-rose-500" />
-                <span>{state.playerA.hp} / 20</span>
+                <Shield className="w-4 h-4 text-rose-500 fill-rose-500" />
+                <span>結界: {state.playerA.hp} / 5</span>
               </div>
             </div>
           </div>

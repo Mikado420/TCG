@@ -6,11 +6,11 @@ export const PRESET_DECKS: Deck[] = [
     deckId: 'preset-red-aggro',
     deckName: '朱 フォウナ速攻アグロ (Red Aggro)',
     faction: 'RED',
-    deckVersion: 'v1.0',
+    deckVersion: 'v2.3',
     cardPoolVersion: CARD_POOL_VERSION,
     createdAt: '2026-03-01',
     updatedAt: '2026-03-01',
-    description: '低コストフォウナとラピッド・ウルフの速攻で序盤から敵ライフを削り、統獣王グラディオンで決着をつけるアグロデッキ。',
+    description: '低コストフォウナとラピッド・ウルフの速攻で序盤から敵結界を削り、統獣王グラディオンで決着をつけるアグロデッキ。',
     cards: [
       // 40 cards total
       'A-01', 'A-01', 'A-01', 'A-01', // リトル・ボア (4)
@@ -31,11 +31,11 @@ export const PRESET_DECKS: Deck[] = [
     deckId: 'preset-blue-control',
     deckName: '蒼 テンポ・バウンスコントロール (Blue Control)',
     faction: 'BLUE',
-    deckVersion: 'v1.0',
+    deckVersion: 'v2.3',
     cardPoolVersion: CARD_POOL_VERSION,
     createdAt: '2026-03-01',
     updatedAt: '2026-03-01',
-    description: 'バウンスとドローでアドバンテージを稼ぎ、大魔導師アストラとガード無視アタッカーで盤面を制圧するコントロールデッキ。',
+    description: 'バウンスとドローでアドバンテージを稼ぎ、大魔導師アストラとガード不能アタッカーで敵結界を攻略するコントロールデッキ。',
     cards: [
       'B-01', 'B-01', 'B-01', 'B-01', // 静寂の魔導師エイル (4)
       'B-02', 'B-02', 'B-02', 'B-02', // 先見者オルフェ (4)
@@ -53,13 +53,13 @@ export const PRESET_DECKS: Deck[] = [
   },
   {
     deckId: 'preset-green-ramp',
-    deckName: '翠 マナ加速ビッグランプ (Green Ramp)',
+    deckName: '翠 アルカナ加速ビッグランプ (Green Ramp)',
     faction: 'GREEN',
-    deckVersion: 'v1.0',
+    deckVersion: 'v2.3',
     cardPoolVersion: CARD_POOL_VERSION,
     createdAt: '2026-03-01',
     updatedAt: '2026-03-01',
-    description: 'リーファや木漏れ日の恩恵でアルカナを急速に増やし、アルカナ7/8枚シナジーと高スタッツトロール群で叩き潰すランプデッキ。',
+    description: 'リーファや木漏れ日の恩恵でアルカナを急速に増やし、アルカナ7枚シナジーと大型トロール群で叩き潰すランプデッキ。',
     cards: [
       'C-01', 'C-01', 'C-01', 'C-01', // 風花妖精ミア (4)
       'C-02', 'C-02', 'C-02', 'C-02', // 星羽妖精リル (4)
@@ -80,7 +80,7 @@ export const PRESET_DECKS: Deck[] = [
     deckId: 'preset-holy-guard',
     deckName: '聖 鉄壁ガーディアンディフェンス (Holy Guard)',
     faction: 'HOLY',
-    deckVersion: 'v1.0',
+    deckVersion: 'v2.3',
     cardPoolVersion: CARD_POOL_VERSION,
     createdAt: '2026-03-01',
     updatedAt: '2026-03-01',
@@ -104,7 +104,7 @@ export const PRESET_DECKS: Deck[] = [
     deckId: 'preset-dark-reanimator',
     deckName: '冥 アーカイブ破壊＆リアニメイト (Dark Reanimator)',
     faction: 'DARK',
-    deckVersion: 'v1.0',
+    deckVersion: 'v2.3',
     cardPoolVersion: CARD_POOL_VERSION,
     createdAt: '2026-03-01',
     updatedAt: '2026-03-01',
@@ -127,24 +127,31 @@ export const PRESET_DECKS: Deck[] = [
   },
 ];
 
-export function getDeckById(deckId: string): Deck | undefined {
-  return PRESET_DECKS.find((d) => d.deckId === deckId);
+export interface DeckValidationResult {
+  valid: boolean;
+  isValid: boolean;
+  errors: string[];
 }
 
-export function validateDeck(deck: Deck): { valid: boolean; errors: string[] } {
+export function validateDeck(deck: Deck): DeckValidationResult {
   const errors: string[] = [];
-  if (!deck.cards || deck.cards.length !== 40) {
-    errors.push(`デッキの枚数はちょうど40枚でなければなりません (現在: ${deck.cards?.length || 0}枚)`);
+
+  if (deck.cards.length !== 40) {
+    errors.push(`デッキ枚数は40枚である必要があります（現在: ${deck.cards.length}枚）`);
   }
+
   const counts: Record<string, number> = {};
-  for (const cardId of deck.cards || []) {
+  for (const cardId of deck.cards) {
     counts[cardId] = (counts[cardId] || 0) + 1;
     if (counts[cardId] > 4) {
-      errors.push(`同一カード「${cardId}」は4枚までしか投入できません (現在: ${counts[cardId]}枚)`);
+      errors.push(`カード「${cardId}」が4枚を超えています（現在: ${counts[cardId]}枚）`);
     }
   }
+
+  const isOk = errors.length === 0;
   return {
-    valid: errors.length === 0,
+    valid: isOk,
+    isValid: isOk,
     errors,
   };
 }

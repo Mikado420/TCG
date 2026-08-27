@@ -96,9 +96,9 @@ export const CardDetailModal: React.FC<CardDetailModalProps> = ({ card, onClose 
               </div>
               <div className="flex flex-col items-center">
                 <span className="text-[10px] text-stone-400 flex items-center gap-1">
-                  <Heart className="w-3 h-3 text-rose-400" /> DMG
+                  <Heart className="w-3 h-3 text-rose-400" /> BRK
                 </span>
-                <span className="text-lg font-black font-mono text-rose-400">{card.dmg}</span>
+                <span className="text-lg font-black font-mono text-rose-400">{card.brk}</span>
               </div>
             </div>
           )}
