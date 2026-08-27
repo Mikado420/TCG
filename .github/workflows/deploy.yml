@@ -34,6 +34,10 @@ jobs:
           node-version: 20
           cache: 'npm'
 
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
       - name: Install dependencies
         run: |
           if [ -f package-lock.json ]; then
@@ -46,10 +50,7 @@ jobs:
         run: npm run build:pages
         env:
           NODE_ENV: production
-          BASE_URL: /TCG/
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
+          BASE_URL: ${{ steps.pages.outputs.base_path || '/TCG/' }}
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
