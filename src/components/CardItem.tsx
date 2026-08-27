@@ -12,6 +12,7 @@ interface CardItemProps {
   size?: 'xs' | 'sm' | 'md' | 'lg';
   onClick?: () => void;
   onInspect?: (card: CardData) => void;
+  onPointerDown?: (e: React.PointerEvent) => void;
   showRested?: boolean;
   compactEffect?: boolean;
 }
@@ -101,6 +102,7 @@ export const CardItem: React.FC<CardItemProps> = ({
   size = 'md',
   onClick,
   onInspect,
+  onPointerDown,
   showRested = true,
   compactEffect = false,
 }) => {
@@ -197,13 +199,14 @@ export const CardItem: React.FC<CardItemProps> = ({
     <div
       id={`card-${baseCard.cardId}-${cardInst?.instanceId || 'base'}`}
       onClick={handleClick}
-      onTouchStart={startLongPress}
-      onTouchEnd={clearLongPress}
-      onTouchMove={clearLongPress}
-      onTouchCancel={clearLongPress}
-      onMouseDown={startLongPress}
-      onMouseUp={clearLongPress}
-      onMouseLeave={clearLongPress}
+      onPointerDown={onPointerDown}
+      onTouchStart={!onPointerDown ? startLongPress : undefined}
+      onTouchEnd={!onPointerDown ? clearLongPress : undefined}
+      onTouchMove={!onPointerDown ? clearLongPress : undefined}
+      onTouchCancel={!onPointerDown ? clearLongPress : undefined}
+      onMouseDown={!onPointerDown ? startLongPress : undefined}
+      onMouseUp={!onPointerDown ? clearLongPress : undefined}
+      onMouseLeave={!onPointerDown ? clearLongPress : undefined}
       className={`relative select-none border flex flex-col justify-between transition-all duration-150 cursor-pointer shadow-md shrink-0 ${
         sizeConfig.container
       } ${factionTheme.bg} ${factionTheme.border} ${
