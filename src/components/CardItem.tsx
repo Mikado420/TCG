@@ -152,6 +152,40 @@ export const CardItem: React.FC<CardItemProps> = ({
     },
   }[size];
 
+  const [isLongPressing, setIsLongPressing] = React.useState(false);
+  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const isLongPressTriggeredRef = React.useRef(false);
+
+  const startLongPress = () => {
+    isLongPressTriggeredRef.current = false;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      isLongPressTriggeredRef.current = true;
+      setIsLongPressing(true);
+      if (onInspect) {
+        onInspect(baseCard);
+      }
+      setTimeout(() => setIsLongPressing(false), 200);
+    }, 450); // 450ms threshold
+  };
+
+  const clearLongPress = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (isLongPressTriggeredRef.current) {
+      isLongPressTriggeredRef.current = false;
+      return;
+    }
+    if (isInteractive && onClick) {
+      onClick();
+    }
+  };
+
   const handleInspectClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onInspect) {
@@ -162,7 +196,14 @@ export const CardItem: React.FC<CardItemProps> = ({
   return (
     <div
       id={`card-${baseCard.cardId}-${cardInst?.instanceId || 'base'}`}
-      onClick={isInteractive ? onClick : undefined}
+      onClick={handleClick}
+      onTouchStart={startLongPress}
+      onTouchEnd={clearLongPress}
+      onTouchMove={clearLongPress}
+      onTouchCancel={clearLongPress}
+      onMouseDown={startLongPress}
+      onMouseUp={clearLongPress}
+      onMouseLeave={clearLongPress}
       className={`relative select-none border flex flex-col justify-between transition-all duration-150 cursor-pointer shadow-md shrink-0 ${
         sizeConfig.container
       } ${factionTheme.bg} ${factionTheme.border} ${
@@ -183,7 +224,7 @@ export const CardItem: React.FC<CardItemProps> = ({
         isGuardable
           ? 'ring-2 ring-sky-400 shadow-lg shadow-sky-500/40 hover:scale-105 z-10'
           : ''
-      } hover:border-white/70 active:scale-95`}
+      } ${isLongPressing ? 'scale-110 shadow-2xl ring-2 ring-amber-300 z-30' : ''} hover:border-white/70 active:scale-95`}
     >
       {/* Top Bar: Cost + Type / Faction */}
       <div>

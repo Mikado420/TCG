@@ -86,14 +86,17 @@ export const App: React.FC = () => {
       {/* Landscape orientation alert for portrait mobile screens */}
       <OrientationWarning />
 
-      {/* Top Slim Navigation */}
-      <Navbar activeTab={activeTab} onSelectTab={setActiveTab} hasApiKey={hasApiKey} />
+      {/* Top Slim Navigation (Hidden during BATTLE to maximize 100% full screen game client) */}
+      {activeTab !== 'BATTLE' && (
+        <Navbar activeTab={activeTab} onSelectTab={setActiveTab} hasApiKey={hasApiKey} />
+      )}
 
       {/* Main Game Screen Viewport */}
-      <main className="flex-1 w-full overflow-hidden relative">
+      <main className="flex-1 h-full w-full overflow-hidden relative">
         {activeTab === 'BATTLE' && (
           <GameBoard
             onInspectCard={(c) => setInspectedCard(c)}
+            onNavigateTab={setActiveTab}
             customDecks={customDecks}
             hasApiKey={hasApiKey}
           />

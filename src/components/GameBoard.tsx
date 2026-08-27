@@ -38,15 +38,27 @@ import {
   BookOpen,
   ArrowRight,
   Settings,
+  Menu,
+  Wrench,
+  Activity,
+  BarChart3,
+  Bug,
 } from 'lucide-react';
+import { AppTab } from './Navbar';
 
 interface GameBoardProps {
   onInspectCard: (card: CardData) => void;
+  onNavigateTab?: (tab: AppTab) => void;
   customDecks: Deck[];
   hasApiKey: boolean;
 }
 
-export const GameBoard: React.FC<GameBoardProps> = ({ onInspectCard, customDecks, hasApiKey }) => {
+export const GameBoard: React.FC<GameBoardProps> = ({
+  onInspectCard,
+  onNavigateTab,
+  customDecks,
+  hasApiKey,
+}) => {
   const allAvailableDecks = [...customDecks, ...PRESET_DECKS];
 
   const [deckAId, setDeckAId] = useState<string>(PRESET_DECKS[0].deckId);
@@ -257,7 +269,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ onInspectCard, customDecks
   return (
     <div
       id="game-board-container"
-      className="h-[calc(100dvh-56px)] w-full flex flex-col justify-between bg-stone-950 text-stone-100 overflow-hidden relative select-none p-1 sm:p-2"
+      className="h-full w-full flex flex-col justify-between bg-stone-950 text-stone-100 overflow-hidden relative select-none p-1 sm:p-2"
     >
       {/* ============================================================ */}
       {/* 1. TOP STATUS & CONTROL BAR */}
@@ -894,6 +906,65 @@ export const GameBoard: React.FC<GameBoardProps> = ({ onInspectCard, customDecks
                   <span>{useGeminiForAI ? 'Gemini 3.7' : 'Heuristic'}</span>
                 </button>
               </div>
+
+              {/* Mode Navigation (Deck Builder, Verification, Analytics, Replays, Debug) */}
+              {onNavigateTab && (
+                <div className="pt-2 border-t border-stone-800">
+                  <div className="font-bold text-white mb-1.5">他画面へ移動:</div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <button
+                      onClick={() => {
+                        setShowSettingsModal(false);
+                        onNavigateTab('DECK_BUILDER');
+                      }}
+                      className="px-2 py-1.5 rounded-lg bg-stone-950 hover:bg-stone-800 border border-stone-700 text-stone-300 hover:text-white flex items-center gap-1 text-[11px] font-bold"
+                    >
+                      <Wrench className="w-3 h-3 text-amber-400" />
+                      <span>デッキ構築</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowSettingsModal(false);
+                        onNavigateTab('VERIFY');
+                      }}
+                      className="px-2 py-1.5 rounded-lg bg-stone-950 hover:bg-stone-800 border border-stone-700 text-stone-300 hover:text-white flex items-center gap-1 text-[11px] font-bold"
+                    >
+                      <Activity className="w-3 h-3 text-emerald-400" />
+                      <span>AI検証</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowSettingsModal(false);
+                        onNavigateTab('ANALYTICS');
+                      }}
+                      className="px-2 py-1.5 rounded-lg bg-stone-950 hover:bg-stone-800 border border-stone-700 text-stone-300 hover:text-white flex items-center gap-1 text-[11px] font-bold"
+                    >
+                      <BarChart3 className="w-3 h-3 text-sky-400" />
+                      <span>勝率分析</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowSettingsModal(false);
+                        onNavigateTab('REPLAY');
+                      }}
+                      className="px-2 py-1.5 rounded-lg bg-stone-950 hover:bg-stone-800 border border-stone-700 text-stone-300 hover:text-white flex items-center gap-1 text-[11px] font-bold"
+                    >
+                      <RotateCcw className="w-3 h-3 text-purple-400" />
+                      <span>リプレイ</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowSettingsModal(false);
+                        onNavigateTab('DEBUG');
+                      }}
+                      className="px-2 py-1.5 rounded-lg bg-stone-950 hover:bg-stone-800 border border-stone-700 text-stone-300 hover:text-white flex items-center gap-1 text-[11px] font-bold"
+                    >
+                      <Bug className="w-3 h-3 text-rose-400" />
+                      <span>デバッグ</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Modal Actions */}
