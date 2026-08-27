@@ -9,6 +9,7 @@ import { ReplayViewer } from './components/ReplayViewer';
 import { DeckBuilder } from './components/DeckBuilder';
 import { DebugView } from './components/DebugView';
 import { CardDetailModal } from './components/CardDetailModal';
+import { OrientationWarning } from './components/OrientationWarning';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>('BATTLE');
@@ -81,12 +82,15 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-stone-950 text-stone-100 flex flex-col font-sans selection:bg-amber-500 selection:text-stone-950">
-      {/* Top Navigation */}
+    <div className="h-full h-[100dvh] w-full bg-stone-950 text-stone-100 flex flex-col font-sans overflow-hidden select-none">
+      {/* Landscape orientation alert for portrait mobile screens */}
+      <OrientationWarning />
+
+      {/* Top Slim Navigation */}
       <Navbar activeTab={activeTab} onSelectTab={setActiveTab} hasApiKey={hasApiKey} />
 
-      {/* Main Content Area */}
-      <main className="flex-1 pb-12">
+      {/* Main Game Screen Viewport */}
+      <main className="flex-1 w-full overflow-hidden relative">
         {activeTab === 'BATTLE' && (
           <GameBoard
             onInspectCard={(c) => setInspectedCard(c)}
@@ -96,39 +100,51 @@ export const App: React.FC = () => {
         )}
 
         {activeTab === 'VERIFY' && (
-          <VerificationView
-            customDecks={customDecks}
-            onCompleteVerification={handleCompleteVerification}
-            onNavigateToAnalytics={() => setActiveTab('ANALYTICS')}
-            onNavigateToReplay={() => setActiveTab('REPLAY')}
-          />
+          <div className="h-full overflow-y-auto p-3 sm:p-4">
+            <VerificationView
+              customDecks={customDecks}
+              onCompleteVerification={handleCompleteVerification}
+              onNavigateToAnalytics={() => setActiveTab('ANALYTICS')}
+              onNavigateToReplay={() => setActiveTab('REPLAY')}
+            />
+          </div>
         )}
 
         {activeTab === 'ANALYTICS' && (
-          <AnalyticsView
-            report={currentReport}
-            historicalReports={historicalReports}
-            onSelectReport={(rep) => setCurrentReport(rep)}
-          />
+          <div className="h-full overflow-y-auto p-3 sm:p-4">
+            <AnalyticsView
+              report={currentReport}
+              historicalReports={historicalReports}
+              onSelectReport={(rep) => setCurrentReport(rep)}
+            />
+          </div>
         )}
 
         {activeTab === 'REPLAY' && (
-          <ReplayViewer replays={replays} onInspectCard={(c) => setInspectedCard(c)} />
+          <div className="h-full overflow-y-auto p-3 sm:p-4">
+            <ReplayViewer replays={replays} onInspectCard={(c) => setInspectedCard(c)} />
+          </div>
         )}
 
         {activeTab === 'DECK_BUILDER' && (
-          <DeckBuilder
-            onInspectCard={(c) => setInspectedCard(c)}
-            onSaveCustomDeck={handleSaveCustomDeck}
-            onTestDeck={handleTestDeck}
-            customDecks={customDecks}
-          />
+          <div className="h-full overflow-y-auto p-3 sm:p-4">
+            <DeckBuilder
+              onInspectCard={(c) => setInspectedCard(c)}
+              onSaveCustomDeck={handleSaveCustomDeck}
+              onTestDeck={handleTestDeck}
+              customDecks={customDecks}
+            />
+          </div>
         )}
 
-        {activeTab === 'DEBUG' && <DebugView />}
+        {activeTab === 'DEBUG' && (
+          <div className="h-full overflow-y-auto p-3 sm:p-4">
+            <DebugView />
+          </div>
+        )}
       </main>
 
-      {/* Card Detail Modal */}
+      {/* Global Card Detail Modal */}
       <CardDetailModal card={inspectedCard} onClose={() => setInspectedCard(null)} />
     </div>
   );

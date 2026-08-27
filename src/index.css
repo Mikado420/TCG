@@ -1,1 +1,85 @@
 @import "tailwindcss";
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+    height: 100dvh;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    background-color: #0c0a09; /* stone-950 */
+    color: #f5f5f4; /* stone-100 */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+}
+
+/* Custom Scrollbar for Modal/Overlay internal scrolling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(12, 10, 9, 0.6);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(120, 113, 108, 0.5);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(217, 119, 6, 0.8);
+}
+
+/* Animations */
+@keyframes card-glow {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.9);
+  }
+}
+
+@keyframes target-glow {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(239, 68, 68, 1);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+}
+
+.animate-card-glow {
+  animation: card-glow 1.5s infinite ease-in-out;
+}
+
+.animate-target-glow {
+  animation: target-glow 1.2s infinite ease-in-out;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2s infinite ease-in-out;
+}
