@@ -1,0 +1,6 @@
+{
+  "name": "自作TCG シミュレーター & AI検証環境",
+  "description": "80枚のカードプールVer.2.2、完全準拠のGame Engine、Gemini AI意思決定＆評価、人間対戦、AI vs AI大量シミュレーション、デッキ検証・勝率・カード使用率・AI思考ログ分析環境",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
